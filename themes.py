@@ -36,10 +36,10 @@ def tema_claro():
             padding: 10px;
         }
         QPushButton:hover {
-            background-color: #ddd;
+            background-color: #DDD;
             border-radius: 8px;
         }
         QLabel {
-            color: #333333;
+            color: #2d2d2d;
         }
     """

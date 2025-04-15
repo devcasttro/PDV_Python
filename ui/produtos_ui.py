@@ -10,12 +10,12 @@ class TelaProdutos(QWidget):
     def __init__(self):
         super().__init__()
 
-        self.setStyleSheet("color: white;")
+        self.produto_id_edicao = None  # None = novo / ID = edição
+
         layout = QVBoxLayout()
 
         # Formulário
         form_layout = QHBoxLayout()
-
         self.nome_input = QLineEdit()
         self.nome_input.setPlaceholderText("Nome do produto")
 
@@ -59,39 +59,59 @@ class TelaProdutos(QWidget):
 
         self.setLayout(layout)
 
-        # Conexões
+        # Eventos
         self.btn_salvar.clicked.connect(self.salvar_produto)
         self.btn_limpar.clicked.connect(self.limpar_campos)
+        self.tabela.cellClicked.connect(self.selecionar_produto)
 
         self.carregar_produtos()
 
     def salvar_produto(self):
-        nome = self.nome_input.text()
+        nome = self.nome_input.text().strip()
         categoria = self.cat_input.text()
-        preco = self.preco_input.text()
-        custo = self.custo_input.text()
+        preco = self.preco_input.text().replace(",", ".").strip()
+        custo = self.custo_input.text().replace(",", ".").strip()
         estoque = self.estoque_input.text()
         codigo = self.codigo_input.text()
 
-        if not nome or not preco:
-            QMessageBox.warning(self, "Erro", "Preencha ao menos nome e preço.")
+        if not nome:
+            QMessageBox.warning(self, "Erro", "O nome do produto é obrigatório.")
+            return
+
+        if not preco:
+            QMessageBox.warning(self, "Erro", "O preço de venda é obrigatório.")
             return
 
         try:
-            produtos_model.inserir_produto(nome, categoria, float(preco), float(custo or 0), int(estoque or 0), codigo)
-            QMessageBox.information(self, "Sucesso", "Produto cadastrado com sucesso!")
+            preco = float(preco)
+            custo = float(custo) if custo else 0.0
+            estoque = int(estoque) if estoque else 0
+        except ValueError:
+            QMessageBox.critical(self, "Erro", "Preço, custo e estoque devem ser números válidos.")
+            return
+
+        try:
+            if self.produto_id_edicao is None:
+                produtos_model.inserir_produto(nome, categoria, preco, custo, estoque, codigo)
+                QMessageBox.information(self, "Sucesso", "Produto cadastrado com sucesso.")
+            else:
+                produtos_model.atualizar_produto(self.produto_id_edicao, nome, categoria, preco, custo, estoque, codigo)
+                QMessageBox.information(self, "Sucesso", "Produto atualizado com sucesso.")
+
             self.limpar_campos()
             self.carregar_produtos()
         except Exception as e:
-            QMessageBox.critical(self, "Erro", f"Erro ao salvar: {e}")
+            QMessageBox.critical(self, "Erro", f"Erro ao salvar produto:\n{e}")
 
     def limpar_campos(self):
+        self.produto_id_edicao = None
         self.nome_input.clear()
         self.cat_input.clear()
         self.preco_input.clear()
         self.custo_input.clear()
         self.estoque_input.clear()
         self.codigo_input.clear()
+        self.tabela.clearSelection()
 
     def carregar_produtos(self):
         self.tabela.setRowCount(0)
@@ -100,3 +120,16 @@ class TelaProdutos(QWidget):
             self.tabela.insertRow(row_idx)
             for col_idx, valor in enumerate(row_data):
                 self.tabela.setItem(row_idx, col_idx, QTableWidgetItem(str(valor)))
+
+    def selecionar_produto(self, row, column):
+        self.produto_id_edicao = int(self.tabela.item(row, 0).text())
+        self.nome_input.setText(self.tabela.item(row, 1).text())
+        self.cat_input.setText(self.tabela.item(row, 2).text())
+        self.preco_input.setText(self.tabela.item(row, 3).text())
+        self.estoque_input.setText(self.tabela.item(row, 4).text())
+
+        dados_completos = produtos_model.buscar_produto_por_id(self.produto_id_edicao)
+        if dados_completos:
+            _, _, _, _, custo, _, codigo = dados_completos
+            self.custo_input.setText(str(custo))
+            self.codigo_input.setText(str(codigo))

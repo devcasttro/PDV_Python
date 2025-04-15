@@ -3,10 +3,13 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QPushButton, QLabel,
     QVBoxLayout, QHBoxLayout, QStackedWidget, QSizePolicy
 )
-from PyQt5.QtGui import QFont, QIcon
+from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt, QDateTime, QTimer
 from themes import tema_escuro, tema_claro
 from ui.produtos_ui import TelaProdutos
+from ui.clientes_ui import TelaClientes
+from ui.fornecedores_ui import TelaFornecedores
+from database import inicializar_banco  # cria tabelas se não existir
 
 
 class MenuLateral(QWidget):
@@ -45,7 +48,6 @@ class MenuLateral(QWidget):
                 border: none;
                 text-align: left;
                 padding: 10px;
-                color: white;
             }
             QPushButton:hover {
                 background-color: #333;
@@ -84,8 +86,8 @@ class MainWindow(QMainWindow):
             "Vendas": TelaSimples("Tela de Vendas"),
             "Produtos": TelaProdutos(),
             "Estoque": TelaSimples("Tela de Estoque"),
-            "Clientes": TelaSimples("Tela de Clientes"),
-            "Fornecedores": TelaSimples("Tela de Fornecedores"),
+            "Clientes": TelaClientes(),
+            "Fornecedores": TelaFornecedores(),
             "Financeiro": TelaSimples("Tela Financeira"),
         }
 
@@ -95,11 +97,10 @@ class MainWindow(QMainWindow):
         self.label_datahora = QLabel()
         self.label_datahora.setAlignment(Qt.AlignRight)
         self.label_datahora.setFont(QFont("Segoe UI", 10))
-        self.label_datahora.setStyleSheet("color: white;")
 
         self.btn_tema = QPushButton("🌙")
         self.btn_tema.setFixedSize(30, 30)
-        self.btn_tema.setStyleSheet("border: none; color: white;")
+        self.btn_tema.setStyleSheet("border: none;")
         self.btn_tema.clicked.connect(self.alternar_tema)
 
         self.atualizar_datahora()
@@ -110,7 +111,6 @@ class MainWindow(QMainWindow):
         cabecalho = QHBoxLayout()
         titulo = QLabel("  🧾  Sistema PDV")
         titulo.setFont(QFont("Segoe UI", 12, QFont.Bold))
-        titulo.setStyleSheet("color: white;")
         cabecalho.addWidget(titulo)
         cabecalho.addStretch()
         cabecalho.addWidget(self.label_datahora)
@@ -158,8 +158,7 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == "__main__":
-    from database import inicializar_banco
-    inicializar_banco()
+    inicializar_banco()  # cria tabelas se ainda não existirem
 
     app = QApplication(sys.argv)
     janela = MainWindow()
