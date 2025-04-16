@@ -5,11 +5,14 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt, QDateTime, QTimer
-from themes import tema_escuro, tema_claro
+import database
+
 from ui.produtos_ui import TelaProdutos
 from ui.clientes_ui import TelaClientes
 from ui.fornecedores_ui import TelaFornecedores
-from database import inicializar_banco  # cria tabelas se não existir
+from ui.vendas_ui import TelaVendas
+from ui.relatorios_ui import TelaRelatorios
+from themes import tema_claro, tema_escuro
 
 
 class MenuLateral(QWidget):
@@ -27,11 +30,13 @@ class MenuLateral(QWidget):
         self.btn_clientes = self.criar_botao("Clientes")
         self.btn_fornecedores = self.criar_botao("Fornecedores")
         self.btn_financeiro = self.criar_botao("Financeiro")
+        self.btn_relatorios = self.criar_botao("Relatórios")
         self.btn_sair = self.criar_botao("Sair")
 
         for btn in [
             self.btn_vendas, self.btn_produtos, self.btn_estoque,
-            self.btn_clientes, self.btn_fornecedores, self.btn_financeiro, self.btn_sair
+            self.btn_clientes, self.btn_fornecedores,
+            self.btn_financeiro, self.btn_relatorios, self.btn_sair
         ]:
             layout.addWidget(btn)
 
@@ -83,12 +88,13 @@ class MainWindow(QMainWindow):
         self.stack = QStackedWidget()
 
         self.telas = {
-            "Vendas": TelaSimples("Tela de Vendas"),
+            "Vendas": TelaVendas(),
             "Produtos": TelaProdutos(),
             "Estoque": TelaSimples("Tela de Estoque"),
             "Clientes": TelaClientes(),
             "Fornecedores": TelaFornecedores(),
             "Financeiro": TelaSimples("Tela Financeira"),
+            "Relatórios": TelaRelatorios()
         }
 
         for tela in self.telas.values():
@@ -138,9 +144,10 @@ class MainWindow(QMainWindow):
         self.menu_lateral.btn_clientes.clicked.connect(lambda: self.stack.setCurrentWidget(self.telas["Clientes"]))
         self.menu_lateral.btn_fornecedores.clicked.connect(lambda: self.stack.setCurrentWidget(self.telas["Fornecedores"]))
         self.menu_lateral.btn_financeiro.clicked.connect(lambda: self.stack.setCurrentWidget(self.telas["Financeiro"]))
+        self.menu_lateral.btn_relatorios.clicked.connect(lambda: self.stack.setCurrentWidget(self.telas["Relatórios"]))
         self.menu_lateral.btn_sair.clicked.connect(self.close)
 
-        self.setStyleSheet(tema_escuro())  # Tema inicial
+        self.setStyleSheet(tema_escuro())
 
     def atualizar_datahora(self):
         agora = QDateTime.currentDateTime().toString("dd/MM/yyyy hh:mm:ss")
@@ -158,8 +165,7 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == "__main__":
-    inicializar_banco()  # cria tabelas se ainda não existirem
-
+    database.criar_tabelas()
     app = QApplication(sys.argv)
     janela = MainWindow()
     janela.show()

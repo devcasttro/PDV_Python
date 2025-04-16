@@ -1,7 +1,8 @@
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
+    QWidget, QVBoxLayout, QHBoxLayout, QLineEdit,
     QPushButton, QTableWidget, QTableWidgetItem, QMessageBox
 )
+from PyQt5.QtCore import Qt
 from models import clientes_model
 
 
@@ -19,9 +20,11 @@ class TelaClientes(QWidget):
 
         self.input_cpf = QLineEdit()
         self.input_cpf.setPlaceholderText("CPF ou CNPJ")
+        self.input_cpf.textChanged.connect(self.definir_mascara_cpf_cnpj)
 
         self.input_telefone = QLineEdit()
         self.input_telefone.setPlaceholderText("Telefone")
+        self.input_telefone.setInputMask("(00) 00000-0000;_")
 
         self.input_email = QLineEdit()
         self.input_email.setPlaceholderText("Email")
@@ -56,14 +59,25 @@ class TelaClientes(QWidget):
 
         self.carregar_clientes()
 
-    def salvar_cliente(self):
-        nome = self.input_nome.text()
-        cpf = self.input_cpf.text()
-        telefone = self.input_telefone.text()
-        email = self.input_email.text()
+    def definir_mascara_cpf_cnpj(self):
+        texto = self.input_cpf.text().replace(".", "").replace("-", "").replace("/", "")
+        if len(texto) <= 11:
+            self.input_cpf.setInputMask("000.000.000-00;_")
+        else:
+            self.input_cpf.setInputMask("00.000.000/0000-00;_")
 
-        if not nome or not cpf:
-            QMessageBox.warning(self, "Erro", "Nome e CPF/CNPJ são obrigatórios.")
+    def salvar_cliente(self):
+        nome = self.input_nome.text().strip()
+        cpf = self.input_cpf.text().strip()
+        telefone = self.input_telefone.text().strip()
+        email = self.input_email.text().strip()
+
+        if not nome:
+            QMessageBox.warning(self, "Erro", "O nome é obrigatório.")
+            return
+
+        if not cpf or "_" in cpf:
+            QMessageBox.warning(self, "Erro", "CPF ou CNPJ inválido ou incompleto.")
             return
 
         try:

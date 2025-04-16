@@ -1,96 +1,76 @@
 import sqlite3
-import os
-
-DB_NAME = "pdv.db"
 
 def conectar():
-    return sqlite3.connect(DB_NAME)
+    return sqlite3.connect("pdv.db")
 
-def inicializar_banco():
-    if os.path.exists(DB_NAME):
-        return
-
+def criar_tabelas():
     conn = conectar()
     cursor = conn.cursor()
 
-    # Produtos
+    # Tabela de Vendas
     cursor.execute("""
-        CREATE TABLE produtos (
+        CREATE TABLE IF NOT EXISTS vendas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT NOT NULL,
-            categoria TEXT,
-            preco_venda REAL,
-            custo REAL,
-            estoque INTEGER DEFAULT 0,
-            codigo_barras TEXT,
-            ativo INTEGER DEFAULT 1
-        )
+            cliente_id INTEGER,
+            data_hora DATETIME DEFAULT CURRENT_TIMESTAMP,
+            desconto_total_valor REAL DEFAULT 0.0,
+            desconto_total_percentual REAL DEFAULT 0.0,
+            total_bruto REAL NOT NULL,
+            total_liquido REAL NOT NULL,
+            FOREIGN KEY (cliente_id) REFERENCES clientes(id)
+        );
     """)
 
-    # Vendas
+    # Tabela de Itens da Venda
     cursor.execute("""
-        CREATE TABLE vendas (
+        CREATE TABLE IF NOT EXISTS itens_venda (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            data TEXT,
-            valor_total REAL,
-            forma_pagamento TEXT,
-            cliente_id INTEGER
-        )
+            venda_id INTEGER NOT NULL,
+            produto_id INTEGER NOT NULL,
+            quantidade INTEGER NOT NULL,
+            preco_unitario REAL NOT NULL,
+            desconto_valor REAL DEFAULT 0.0,
+            desconto_percentual REAL DEFAULT 0.0,
+            subtotal REAL NOT NULL,
+            FOREIGN KEY (venda_id) REFERENCES vendas(id),
+            FOREIGN KEY (produto_id) REFERENCES produtos(id)
+        );
     """)
 
-    # Itens da venda
+    # Tabela de Formas de Pagamento
     cursor.execute("""
-        CREATE TABLE itens_venda (
+        CREATE TABLE IF NOT EXISTS formas_pagamento (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            venda_id INTEGER,
-            produto_id INTEGER,
-            quantidade INTEGER,
-            preco_unitario REAL
-        )
+            descricao TEXT NOT NULL UNIQUE
+        );
     """)
 
-    # Clientes
-    cursor.execute("""
-        CREATE TABLE clientes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT,
-            cpf_cnpj TEXT,
-            telefone TEXT,
-            email TEXT,
-            ativo INTEGER DEFAULT 1
-        )
-    """)
+    # Inserir formas de pagamento padrão
+    formas_pagamento = [
+        ('Dinheiro',),
+        ('Cartão de Crédito',),
+        ('Cartão de Débito',),
+        ('PIX',),
+        ('Boleto',),
+        ('Transferência Bancária',),
+        ('Cheque',),
+        ('Outros',)
+    ]
+    cursor.executemany("""
+        INSERT OR IGNORE INTO formas_pagamento (descricao) VALUES (?);
+    """, formas_pagamento)
 
-    # Fornecedores
+    # Tabela de Pagamentos
     cursor.execute("""
-        CREATE TABLE fornecedores (
+        CREATE TABLE IF NOT EXISTS pagamentos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            razao_social TEXT,
-            cnpj TEXT,
-            telefone TEXT,
-            email TEXT,
-            ativo INTEGER DEFAULT 1
-        )
-    """)
-
-    # Contas a pagar e receber
-    cursor.execute("""
-        CREATE TABLE financeiro (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            tipo TEXT, -- 'pagar' ou 'receber'
-            descricao TEXT,
-            valor REAL,
-            vencimento TEXT,
-            pago INTEGER DEFAULT 0,
-            data_pagamento TEXT,
-            pessoa_id INTEGER,
-            pessoa_tipo TEXT -- 'cliente' ou 'fornecedor'
-        )
+            venda_id INTEGER NOT NULL,
+            forma_pagamento_id INTEGER NOT NULL,
+            valor REAL NOT NULL,
+            FOREIGN KEY (venda_id) REFERENCES vendas(id),
+            FOREIGN KEY (forma_pagamento_id) REFERENCES formas_pagamento(id)
+        );
     """)
 
     conn.commit()
     conn.close()
-
-# Chamada automática ao rodar
-if __name__ == "__main__":
-    inicializar_banco()
